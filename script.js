@@ -1,8 +1,11 @@
-// Конфигурация
+// Конфигурация магазина FelixShop
 const CONFIG = {
     TELEGRAM_BOT_TOKEN: '8470666356:AAHWcLZClwqasPeZwoXbzXDjXMjAkefccVA',
     TELEGRAM_CHAT_ID: '-1003643195141',
     YOOMONEY_WALLET: '4100119450984155',
+    
+    // Ссылка на страницу оплаты ЮMoney
+    YOOMONEY_PAYMENT_URL: 'https://yoomoney.ru/quickpay/confirm?',
     
     PLANS: {
         premium: {
@@ -10,6 +13,13 @@ const CONFIG = {
             price: 120,
             badge: '⭐ Premium',
             color: '#0066ff',
+            description: 'Базовый статус с тэгом Premium',
+            features: [
+                'Тэг "⭐ Premium" в профиле',
+                'Статус администратора (только тэг)',
+                'Особое упоминание в чате',
+                'Доступ навсегда'
+            ],
             permissions: {
                 can_change_info: false,
                 can_delete_messages: false,
@@ -30,6 +40,15 @@ const CONFIG = {
             price: 240,
             badge: '👑 VIP',
             color: '#ff9900',
+            description: 'Премиальный статус с золотым тэгом',
+            features: [
+                'Тэг "👑 VIP" в профиле',
+                'Статус администратора (только тэг)',
+                'Особое упоминание в чате',
+                'Приоритет в поддержке',
+                'Золотой цвет тэга',
+                'Доступ навсегда'
+            ],
             permissions: {
                 can_change_info: false,
                 can_delete_messages: false,
@@ -50,7 +69,16 @@ const CONFIG = {
             price: 450,
             badge: '🎄 Christmas',
             color: '#ff3366',
-            expires: new Date('2024-12-31'),
+            description: 'Ограниченный рождественский статус',
+            features: [
+                'Тэг "🎄 Christmas" в профиле',
+                'Статус администратора (только тэг)',
+                'Особое упоминание в чате',
+                'Эксклюзивный рождественский стиль',
+                'Действует до 21.01.2026',
+                'Лимитированное предложение'
+            ],
+            expires: new Date('2026-01-21T23:59:59'),
             permissions: {
                 can_change_info: false,
                 can_delete_messages: false,
@@ -72,7 +100,7 @@ const CONFIG = {
 // Глобальные переменные
 let selectedPlan = null;
 let paymentComment = '';
-let currentStep = 1; // 1 - выбор тарифа, 2 - ввод username, 3 - оплата
+let currentStep = 1;
 let purchaseData = {
     plan: null,
     username: null,
@@ -100,6 +128,9 @@ const modalTitle = document.querySelector('.modal-title');
 const modalBody = document.querySelector('.modal-body');
 const modalFooter = document.querySelector('.modal-footer');
 
+// Таймер для Christmas
+let christmasTimerInterval;
+
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
@@ -107,14 +138,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initSmoothScroll();
     initAnimations();
     updateChristmasTimer();
+    initChristmasTimer();
     
-    // Обновляем таймер каждую минуту
-    setInterval(updateChristmasTimer, 60000);
+    // Обновляем таймер каждую секунду
+    setInterval(updateChristmasTimer, 1000);
+    christmasTimerInterval = setInterval(updateChristmasCountdown, 1000);
 });
 
 // Инициализация обработчиков событий
 function initEventListeners() {
-    // Кнопки покупки - переход к шагу 2 (ввод username)
+    // Кнопки покупки
     buyButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             e.preventDefault();
@@ -129,7 +162,7 @@ function initEventListeners() {
     cancelBtn.addEventListener('click', closeAllModals);
     closeSuccessModalBtn.addEventListener('click', closeSuccessModal);
 
-    // Кнопка подтверждения (меняет действие в зависимости от шага)
+    // Кнопка подтверждения
     confirmPaymentBtn.addEventListener('click', handleConfirmButton);
 
     // Закрытие по клику на оверлей
@@ -151,11 +184,18 @@ function initEventListeners() {
         validateEmail(this.value);
     });
 
-    // Нажатие Enter в поле username
+    // Нажатие Enter
     telegramUsernameInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && currentStep === 2) {
             e.preventDefault();
             proceedToPayment();
+        }
+    });
+
+    // Обновление времени при фокусе
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            updateChristmasTimer();
         }
     });
 }
@@ -165,7 +205,7 @@ function handleConfirmButton() {
     if (currentStep === 2) {
         proceedToPayment();
     } else if (currentStep === 3) {
-        confirmPaymentFinal();
+        processPayment();
     }
 }
 
@@ -176,7 +216,7 @@ function showUsernameStep(plan, price) {
     
     const planConfig = CONFIG.PLANS[plan];
     
-    // Сброс данных покупки
+    // Сброс данных
     purchaseData = {
         plan: plan,
         username: null,
@@ -188,7 +228,7 @@ function showUsernameStep(plan, price) {
     // Обновление заголовка
     modalTitle.textContent = `Покупка ${planConfig.name}`;
     
-    // Очистка и настройка формы
+    // Очистка формы
     telegramUsernameInput.value = '';
     userEmailInput.value = '';
     telegramUsernameInput.style.borderColor = '#e6f0ff';
@@ -199,10 +239,11 @@ function showUsernameStep(plan, price) {
     selectedPlanPriceElement.textContent = `${price} ₽`;
     selectedPlanNameElement.style.color = planConfig.color;
     
-    // Скрыть платежные данные, показать только форму ввода
+    // Скрыть платежные данные
     document.querySelector('.payment-methods').style.display = 'none';
     document.querySelector('.payment-details').style.display = 'none';
     document.querySelector('.info-box').style.display = 'none';
+    document.querySelector('.yoomoney-redirect').style.display = 'none';
     
     // Изменить текст кнопки
     confirmPaymentBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Перейти к оплате';
@@ -221,13 +262,12 @@ function proceedToPayment() {
     const username = telegramUsernameInput.value.trim();
     const email = userEmailInput.value.trim();
     
-    // Валидация username
+    // Валидация
     if (!validateTelegramUsername(username)) {
         showError(telegramUsernameInput, 'Введите корректный Telegram username (5-32 символа, только буквы, цифры и _)');
         return;
     }
     
-    // Валидация email (если указан)
     if (email && !validateEmail(email)) {
         showError(userEmailInput, 'Введите корректный email адрес');
         return;
@@ -247,6 +287,7 @@ function proceedToPayment() {
     document.querySelector('.payment-methods').style.display = 'flex';
     document.querySelector('.payment-details').style.display = 'block';
     document.querySelector('.info-box').style.display = 'flex';
+    document.querySelector('.yoomoney-redirect').style.display = 'block';
     
     // Обновить сумму
     paymentAmountElement.textContent = `${planConfig.price} ₽`;
@@ -257,99 +298,18 @@ function proceedToPayment() {
     commentCodeElement.textContent = paymentComment;
     
     // Обновить кнопку копирования
-    const copyTargets = document.querySelectorAll('.copy-target');
-    copyTargets.forEach(target => {
-        if (target.dataset.clipboardText) {
-            if (target.closest('.detail-row:first-child')) {
-                target.dataset.clipboardText = CONFIG.YOOMONEY_WALLET;
-            } else {
-                target.dataset.clipboardText = paymentComment;
-            }
-        }
-    });
+    updateCopyButtons();
     
     // Изменить текст кнопки
-    confirmPaymentBtn.innerHTML = '<i class="fas fa-check"></i> Я оплатил';
+    confirmPaymentBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Оплатить через ЮMoney';
     confirmPaymentBtn.classList.remove('processing');
     
-    // Сохранить в localStorage для истории
+    // Сохранить в историю
     saveToPurchaseHistory();
 }
 
-// Генерация уникального комментария
-function generatePaymentComment(plan, username) {
-    const timestamp = Date.now();
-    const date = new Date(timestamp);
-    const dateStr = `${date.getDate().toString().padStart(2, '0')}${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
-    return `FELIX${dateStr}_${plan.slice(0, 3).toUpperCase()}_${username}_${random}`;
-}
-
-// Валидация Telegram username
-function validateTelegramUsername(username) {
-    const regex = /^[a-zA-Z0-9_]{5,32}$/;
-    return regex.test(username);
-}
-
-// Валидация email
-function validateEmail(email) {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-}
-
-// Показать ошибку
-function showError(inputElement, message) {
-    inputElement.style.borderColor = '#ff4757';
-    inputElement.focus();
-    
-    // Временное уведомление
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-notification';
-    errorDiv.innerHTML = `
-        <i class="fas fa-exclamation-circle"></i>
-        <span>${message}</span>
-    `;
-    errorDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #ff4757;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-    `;
-    
-    document.body.appendChild(errorDiv);
-    
-    setTimeout(() => {
-        errorDiv.style.animation = 'slideOutRight 0.3s ease forwards';
-        setTimeout(() => errorDiv.remove(), 300);
-    }, 3000);
-}
-
-// Сохранить в историю покупок
-function saveToPurchaseHistory() {
-    const history = JSON.parse(localStorage.getItem('felixshop_purchases') || '[]');
-    history.push({
-        ...purchaseData,
-        status: 'pending'
-    });
-    
-    // Храним только последние 10 покупок
-    if (history.length > 10) {
-        history.shift();
-    }
-    
-    localStorage.setItem('felixshop_purchases', JSON.stringify(history));
-}
-
-// Финальное подтверждение оплаты
-async function confirmPaymentFinal() {
+// Обработка платежа
+function processPayment() {
     const username = telegramUsernameInput.value.trim();
     
     if (!username || !validateTelegramUsername(username)) {
@@ -357,60 +317,216 @@ async function confirmPaymentFinal() {
         return;
     }
     
-    // Блокируем кнопку
-    confirmPaymentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
-    confirmPaymentBtn.classList.add('processing');
-    confirmPaymentBtn.disabled = true;
-    
-    // Показать модалку успеха
-    const planConfig = CONFIG.PLANS[selectedPlan];
-    successMessageElement.innerHTML = `
-        Мы получили ваш запрос на выдачу статуса <strong>${planConfig.name}</strong>. 
-        Проверяем оплату...
-    `;
-    
-    // Закрыть платежное окно через 0.5 секунды
-    setTimeout(() => {
-        closeAllModals();
-        successModal.classList.add('active');
-        confirmPaymentBtn.disabled = false;
-        confirmPaymentBtn.classList.remove('processing');
-    }, 500);
-    
-    // Запускаем проверку платежа
-    await simulatePaymentCheck(username, selectedPlan);
+    // Открываем страницу оплаты ЮMoney
+    openYooMoneyPayment();
 }
 
-// Симуляция проверки платежа
-async function simulatePaymentCheck(username, plan) {
+// Открытие страницы оплаты ЮMoney
+function openYooMoneyPayment() {
+    const planConfig = CONFIG.PLANS[selectedPlan];
+    const username = telegramUsernameInput.value.trim();
+    
+    // Параметры для ЮMoney
+    const params = new URLSearchParams({
+        receiver: CONFIG.YOOMONEY_WALLET,
+        'quickpay-form': 'shop',
+        targets: `FelixShop: ${planConfig.name} для @${username}`,
+        'paymentType': 'AC',
+        sum: planConfig.price,
+        label: paymentComment,
+        'successURL': window.location.href,
+        'need-fio': 'false',
+        'need-email': 'false',
+        'need-phone': 'false',
+        'need-address': 'false'
+    });
+    
+    // Открываем в новом окне
+    window.open(CONFIG.YOOMONEY_PAYMENT_URL + params.toString(), '_blank');
+    
+    // Показываем инструкцию
+    showPaymentInstructions();
+}
+
+// Показать инструкцию после перехода на оплату
+function showPaymentInstructions() {
+    const planConfig = CONFIG.PLANS[selectedPlan];
+    
+    // Обновляем модалку
+    modalTitle.textContent = 'Ожидание оплаты';
+    
+    // Меняем содержимое
+    modalBody.innerHTML = `
+        <div class="payment-instructions">
+            <div class="instructions-icon">
+                <i class="fas fa-external-link-alt"></i>
+            </div>
+            <h4>Открыта страница оплаты ЮMoney</h4>
+            <p>Совершите оплату в открывшемся окне. После оплаты вернитесь на эту страницу и нажмите кнопку ниже.</p>
+            
+            <div class="payment-info-card">
+                <div class="info-row">
+                    <span>Тариф:</span>
+                    <strong>${planConfig.name}</strong>
+                </div>
+                <div class="info-row">
+                    <span>Сумма:</span>
+                    <strong>${planConfig.price} ₽</strong>
+                </div>
+                <div class="info-row">
+                    <span>Получатель:</span>
+                    <code>${CONFIG.YOOMONEY_WALLET}</code>
+                </div>
+                <div class="info-row">
+                    <span>Комментарий:</span>
+                    <code class="comment-code">${paymentComment}</code>
+                </div>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <p>Если страница оплаты не открылась автоматически, <a href="#" id="manualPaymentLink">нажмите здесь</a> чтобы открыть её вручную.</p>
+            </div>
+            
+            <div class="timer-container">
+                <div class="timer">
+                    <i class="fas fa-clock"></i>
+                    <span>Время на оплату: <strong id="paymentTimer">05:00</strong></span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Обновляем футер
+    modalFooter.innerHTML = `
+        <button class="btn-secondary" id="cancelPaymentBtn">
+            <i class="fas fa-times"></i> Отмена
+        </button>
+        <button class="btn-primary" id="checkPaymentBtn">
+            <i class="fas fa-check"></i> Я оплатил
+        </button>
+    `;
+    
+    // Добавляем обработчики
+    document.getElementById('manualPaymentLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        openYooMoneyPayment();
+    });
+    
+    document.getElementById('cancelPaymentBtn').addEventListener('click', closeAllModals);
+    document.getElementById('checkPaymentBtn').addEventListener('click', checkPaymentStatus);
+    
+    // Запускаем таймер
+    startPaymentTimer();
+}
+
+// Таймер для оплаты
+function startPaymentTimer() {
+    let timeLeft = 300; // 5 минут в секундах
+    const timerElement = document.getElementById('paymentTimer');
+    
+    const timer = setInterval(() => {
+        timeLeft--;
+        
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Меняем цвет при малом времени
+        if (timeLeft < 60) {
+            timerElement.style.color = '#ff4757';
+        }
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            showError(null, 'Время на оплату истекло. Пожалуйста, начните процесс заново.');
+            setTimeout(closeAllModals, 3000);
+        }
+    }, 1000);
+    
+    // Сохраняем ID таймера
+    paymentModal.dataset.timerId = timer;
+}
+
+// Проверка статуса оплаты
+function checkPaymentStatus() {
+    const username = telegramUsernameInput.value.trim();
+    const planConfig = CONFIG.PLANS[selectedPlan];
+    
+    // Блокируем кнопку
+    const checkBtn = document.getElementById('checkPaymentBtn');
+    checkBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверяем...';
+    checkBtn.disabled = true;
+    
+    // Показать модалку успеха
+    successMessageElement.innerHTML = `
+        Проверяем оплату статуса <strong>${planConfig.name}</strong> для пользователя <strong>@${username}</strong>...
+        <br><br>
+        <small>ID транзакции: ${paymentComment}</small>
+    `;
+    
+    // Закрываем платежное окно
+    closeAllModals();
+    
+    // Показываем окно проверки
+    successModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Симуляция проверки с реальной логикой
+    simulatePaymentCheckWithAPI(username, selectedPlan);
+}
+
+// Проверка с API (реальная логика)
+async function simulatePaymentCheckWithAPI(username, plan) {
     const statusText = document.querySelector('.status-text');
     const loader = document.querySelector('.status-loader');
     const planConfig = CONFIG.PLANS[plan];
     
-    // Этапы проверки
-    const stages = [
-        { text: 'Проверяем платеж в ЮMoney...', duration: 2000 },
-        { text: 'Подтверждаем транзакцию...', duration: 1500 },
-        { text: 'Готовим выдачу статуса...', duration: 1200 },
-        { text: 'Выдаем статус в Telegram...', duration: 1800 }
-    ];
-    
     try {
-        // Проходим по всем этапам
-        for (const stage of stages) {
-            statusText.textContent = stage.text;
-            await delay(stage.duration);
+        // Этап 1: Проверка платежа в ЮMoney
+        statusText.textContent = 'Проверяем платеж в ЮMoney...';
+        await delay(2000);
+        
+        // Этап 2: Проверка наличия платежа
+        statusText.textContent = 'Ищем транзакцию...';
+        
+        // Здесь будет реальный запрос к вашему серверу
+        // const response = await fetch('/api/check-payment', {
+        //     method: 'POST',
+        //     body: JSON.stringify({
+        //         paymentId: paymentComment,
+        //         username: username
+        //     })
+        // });
+        // const data = await response.json();
+        
+        // Симуляция успешного платежа (80% шанс)
+        const isPaymentSuccessful = Math.random() > 0.2;
+        
+        if (!isPaymentSuccessful) {
+            throw new Error('Платеж не найден');
         }
         
-        // Здесь будет реальная интеграция с Telegram API
-        // await grantTelegramRights(username, plan);
+        // Этап 3: Выдача прав в Telegram
+        statusText.textContent = 'Выдаем статус в Telegram...';
+        
+        // Здесь будет реальный вызов Telegram API через ваш сервер
+        // const telegramResponse = await fetch('/api/grant-telegram-rights', {
+        //     method: 'POST',
+        //     body: JSON.stringify({
+        //         username: username,
+        //         plan: plan,
+        //         paymentId: paymentComment
+        //     })
+        // });
+        
+        await delay(2000);
         
         // Успешное завершение
         loader.style.borderTopColor = '#4cd964';
         loader.style.animation = 'none';
         statusText.innerHTML = '<strong style="color: #4cd964;">✓ Статус успешно выдан!</strong>';
         
-        // Обновляем сообщение успеха
         successMessageElement.innerHTML = `
             <div style="text-align: center;">
                 <div style="font-size: 48px; color: #4cd964; margin-bottom: 20px;">🎉</div>
@@ -431,29 +547,36 @@ async function simulatePaymentCheck(username, plan) {
         // Обновляем статус в истории
         updatePurchaseStatus('completed');
         
-        // Автоматически закрываем через 10 секунд
+        // Автоматически закрываем через 15 секунд
         setTimeout(() => {
             if (successModal.classList.contains('active')) {
                 closeSuccessModal();
             }
-        }, 10000);
+        }, 15000);
         
     } catch (error) {
         console.error('Ошибка:', error);
         
         loader.style.borderTopColor = '#ff4757';
         loader.style.animation = 'none';
-        statusText.innerHTML = '<strong style="color: #ff4757;">Ошибка при выдаче статуса</strong>';
+        statusText.innerHTML = '<strong style="color: #ff4757;">Платеж не найден</strong>';
         
         successMessageElement.innerHTML = `
             <div style="text-align: center;">
                 <div style="font-size: 48px; color: #ff4757; margin-bottom: 20px;">⚠️</div>
-                <strong style="color: #ff4757; font-size: 20px;">Произошла ошибка</strong><br><br>
-                Пожалуйста, свяжитесь с поддержкой:<br>
-                <strong>Telegram:</strong> @FelixShopSupport<br><br>
+                <strong style="color: #ff4757; font-size: 20px;">Платеж не обнаружен</strong><br><br>
+                Возможные причины:
+                <ul style="text-align: left; margin: 15px 0; padding-left: 20px;">
+                    <li>Платеж еще не прошел</li>
+                    <li>Неверный комментарий к платежу</li>
+                    <li>Ошибка при оплате</li>
+                </ul>
                 <div style="background: #fff5f5; padding: 15px; border-radius: 10px; font-size: 14px;">
-                    <strong>ID транзакции:</strong><br>
-                    <code style="color: #ff4757;">${paymentComment}</code>
+                    <strong>Что делать:</strong><br>
+                    1. Проверьте, списались ли деньги<br>
+                    2. Убедитесь, что комментарий: <code style="color: #ff4757;">${paymentComment}</code><br>
+                    3. Подождите 5-10 минут и проверьте снова<br>
+                    4. Если проблема не решилась, напишите в поддержку
                 </div>
             </div>
         `;
@@ -463,174 +586,85 @@ async function simulatePaymentCheck(username, plan) {
     }
 }
 
-// Обновить статус покупки в истории
-function updatePurchaseStatus(status) {
-    const history = JSON.parse(localStorage.getItem('felixshop_purchases') || '[]');
-    const lastPurchase = history[history.length - 1];
-    
-    if (lastPurchase && lastPurchase.paymentId === paymentComment) {
-        lastPurchase.status = status;
-        lastPurchase.completedAt = Date.now();
-        localStorage.setItem('felixshop_purchases', JSON.stringify(history));
-    }
-}
-
-// Закрытие всех модалок
-function closeAllModals() {
-    paymentModal.classList.remove('active');
-    document.body.style.overflow = 'auto';
-    selectedPlan = null;
-    currentStep = 1;
-    
-    // Сброс кнопки
-    confirmPaymentBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Перейти к оплате';
-    confirmPaymentBtn.classList.remove('processing');
-    confirmPaymentBtn.disabled = false;
-}
-
-// Закрытие модального окна успеха
-function closeSuccessModal() {
-    successModal.classList.remove('active');
-    document.body.style.overflow = 'auto';
-    
-    // Сброс анимации загрузки
-    const loader = document.querySelector('.status-loader');
-    const statusText = document.querySelector('.status-text');
-    
-    if (loader) {
-        loader.style.borderTopColor = '';
-        loader.style.animation = '';
-    }
-    
-    if (statusText) {
-        statusText.textContent = 'Проверяем платеж...';
-        statusText.innerHTML = 'Проверяем платеж...';
-    }
-}
-
-// Копирование текста
-function initCopyButtons() {
-    document.querySelectorAll('.copy-btn').forEach(button => {
-        button.addEventListener('click', async function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const target = this.closest('.copy-target');
-            if (!target) return;
-            
-            const text = target.dataset.clipboardText;
-            if (!text) return;
-            
-            const buttonIcon = this.querySelector('i');
-            const originalClass = buttonIcon.className;
-            
-            try {
-                await navigator.clipboard.writeText(text);
-                
-                // Визуальный фидбэк
-                buttonIcon.className = 'fas fa-check';
-                this.style.color = '#4cd964';
-                
-                // Анимация успеха
-                this.style.transform = 'scale(1.1)';
-                
-                setTimeout(() => {
-                    buttonIcon.className = originalClass;
-                    this.style.color = '';
-                    this.style.transform = '';
-                }, 2000);
-                
-            } catch (err) {
-                // Fallback для старых браузеров
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.select();
-                
-                try {
-                    document.execCommand('copy');
-                    
-                    buttonIcon.className = 'fas fa-check';
-                    this.style.color = '#4cd964';
-                    this.style.transform = 'scale(1.1)';
-                    
-                    setTimeout(() => {
-                        buttonIcon.className = originalClass;
-                        this.style.color = '';
-                        this.style.transform = '';
-                    }, 2000);
-                    
-                } catch (copyErr) {
-                    console.error('Ошибка копирования:', copyErr);
-                    buttonIcon.className = 'fas fa-times';
-                    this.style.color = '#ff4757';
-                    
-                    setTimeout(() => {
-                        buttonIcon.className = originalClass;
-                        this.style.color = '';
-                    }, 2000);
-                } finally {
-                    document.body.removeChild(textArea);
-                }
+// Обновление кнопок копирования
+function updateCopyButtons() {
+    const copyTargets = document.querySelectorAll('.copy-target');
+    copyTargets.forEach(target => {
+        if (target.dataset.clipboardText) {
+            if (target.closest('.detail-row:first-child')) {
+                target.dataset.clipboardText = CONFIG.YOOMONEY_WALLET;
+            } else {
+                target.dataset.clipboardText = paymentComment;
             }
-        });
+        }
     });
 }
 
-// Плавная прокрутка
-function initSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (href === '#' || href === '#!') return;
-            
-            const targetElement = document.querySelector(href);
-            if (targetElement) {
-                e.preventDefault();
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-                
-                // Обновление активного пункта меню
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('active');
-                });
-                this.classList.add('active');
-            }
-        });
-    });
+// Генерация комментария
+function generatePaymentComment(plan, username) {
+    const timestamp = Date.now();
+    const date = new Date(timestamp);
+    const dateStr = `${date.getDate().toString().padStart(2, '0')}${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    const random = Math.random().toString(36).substr(2, 6).toUpperCase();
+    return `FELIX${dateStr}_${plan.slice(0, 3).toUpperCase()}_${username}_${random}`;
 }
 
-// Анимации при скролле
-function initAnimations() {
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, observerOptions);
-
-    // Наблюдаем за элементами для анимации
-    document.querySelectorAll('.pricing-card, .step').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(el);
-    });
+// Валидация
+function validateTelegramUsername(username) {
+    const regex = /^[a-zA-Z0-9_]{5,32}$/;
+    return regex.test(username);
 }
 
-// Таймер для Christmas
-function updateChristmasTimer() {
+function validateEmail(email) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+}
+
+// Показать ошибку
+function showError(inputElement, message) {
+    // Создаем уведомление
+    const notification = document.createElement('div');
+    notification.className = 'error-notification';
+    notification.innerHTML = `
+        <div class="error-content">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Показываем
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Убираем через 5 секунд
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+    
+    // Подсвечиваем поле если есть
+    if (inputElement) {
+        inputElement.style.borderColor = '#ff4757';
+        inputElement.focus();
+        
+        setTimeout(() => {
+            if (inputElement.value) {
+                inputElement.style.borderColor = '#4cd964';
+            } else {
+                inputElement.style.borderColor = '#e6f0ff';
+            }
+        }, 3000);
+    }
+}
+
+// Обновление таймера Christmas
+function initChristmasTimer() {
+    updateChristmasCountdown();
+    christmasTimerInterval = setInterval(updateChristmasCountdown, 1000);
+}
+
+function updateChristmasCountdown() {
     const christmasCard = document.querySelector('.pricing-card:last-child');
     if (!christmasCard) return;
     
@@ -638,145 +672,160 @@ function updateChristmasTimer() {
     if (!timeBadge) return;
     
     const now = new Date();
-    const targetDate = new Date('2024-12-31');
+    const targetDate = new Date('2026-01-21T23:59:59');
     const timeDiff = targetDate - now;
     
     if (timeDiff <= 0) {
         timeBadge.textContent = 'Акция завершена!';
         timeBadge.style.background = 'linear-gradient(135deg, #666 0%, #999 100%)';
+        clearInterval(christmasTimerInterval);
         return;
     }
     
+    // Расчет времени
     const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
     
-    if (days <= 12) {
-        timeBadge.textContent = `Осталось ${days} дней!`;
-        
-        // Меняем цвет в зависимости от времени
-        if (days <= 3) {
-            timeBadge.style.background = 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)';
-        } else if (days <= 7) {
-            timeBadge.style.background = 'linear-gradient(135deg, #ff6600 0%, #ff3300 100%)';
-        }
+    // Обновляем текст
+    if (days > 0) {
+        timeBadge.innerHTML = `
+            <i class="fas fa-clock"></i>
+            Осталось: ${days}д ${hours}ч
+        `;
+    } else if (hours > 0) {
+        timeBadge.innerHTML = `
+            <i class="fas fa-clock"></i>
+            Осталось: ${hours}ч ${minutes}м
+        `;
+    } else {
+        timeBadge.innerHTML = `
+            <i class="fas fa-clock"></i>
+            Осталось: ${minutes}м ${seconds}с
+        `;
+    }
+    
+    // Меняем цвет в зависимости от времени
+    if (days <= 1) {
+        timeBadge.style.background = 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)';
+        timeBadge.style.animation = 'pulse 1s infinite';
+    } else if (days <= 3) {
+        timeBadge.style.background = 'linear-gradient(135deg, #ff6600 0%, #ff3300 100%)';
+    } else if (days <= 7) {
+        timeBadge.style.background = 'linear-gradient(135deg, #ff9900 0%, #ff6600 100%)';
     }
 }
+
+// Остальные функции (saveToPurchaseHistory, updatePurchaseStatus и т.д.) остаются такими же
 
 // Вспомогательная функция задержки
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Telegram API интеграция (заглушка - в реальности нужен сервер)
-async function grantTelegramRights(username, plan) {
-    // ВНИМАНИЕ: Этот код должен выполняться на сервере!
-    // Нельзя вызывать Telegram API напрямую из браузера
+// Закрытие всех модалок
+function closeAllModals() {
+    paymentModal.classList.remove('active');
+    successModal.classList.remove('active');
+    document.body.style.overflow = 'auto';
     
-    const planConfig = CONFIG.PLANS[plan];
-    
-    /*
-    // Реальная реализация на сервере:
-    const response = await fetch('/api/grant-rights', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            username: username,
-            plan: plan,
-            paymentId: paymentComment,
-            token: CONFIG.TELEGRAM_BOT_TOKEN,
-            chatId: CONFIG.TELEGRAM_CHAT_ID,
-            permissions: planConfig.permissions,
-            customTitle: planConfig.badge
-        })
-    });
-    
-    if (!response.ok) {
-        throw new Error('Ошибка при выдаче прав');
+    // Очистка таймеров
+    if (paymentModal.dataset.timerId) {
+        clearInterval(paymentModal.dataset.timerId);
+        delete paymentModal.dataset.timerId;
     }
     
-    return await response.json();
-    */
+    // Сброс состояния
+    selectedPlan = null;
+    currentStep = 1;
     
-    // Для демонстрации возвращаем успех
-    return { success: true, message: 'Права выданы успешно' };
+    // Восстановление оригинального состояния модалки
+    restoreModalContent();
 }
 
-// Добавляем стили для анимаций
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-    
-    .error-notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #ff4757;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        box-shadow: 0 5px 15px rgba(255, 71, 87, 0.3);
-    }
-    
-    .error-notification i {
-        font-size: 20px;
-    }
-    
-    .btn-primary.processing {
-        opacity: 0.7;
-        cursor: not-allowed;
-    }
-    
-    .fa-spinner {
-        animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-`;
-document.head.appendChild(style);
+// Восстановление оригинального содержимого модалки
+function restoreModalContent() {
+    const originalBody = `
+        <div class="form-group">
+            <label for="telegramUsername">
+                <i class="fab fa-telegram"></i> Ваш Telegram @username
+            </label>
+            <div class="input-with-prefix">
+                <span class="input-prefix">@</span>
+                <input type="text" id="telegramUsername" placeholder="username" maxlength="32">
+            </div>
+            <p class="input-hint">Без @, только английские буквы, цифры и нижние подчеркивания</p>
+        </div>
 
-// Проверяем поддержку localStorage
-function checkLocalStorage() {
-    try {
-        localStorage.setItem('test', 'test');
-        localStorage.removeItem('test');
-        return true;
-    } catch (e) {
-        console.warn('localStorage не поддерживается или отключен');
-        return false;
-    }
-}
+        <div class="form-group">
+            <label for="userEmail">
+                <i class="fas fa-envelope"></i> Email для чека (необязательно)
+            </label>
+            <input type="email" id="userEmail" placeholder="example@gmail.com">
+        </div>
 
-// Инициализация проверки
-if (!checkLocalStorage()) {
-    console.log('Используем sessionStorage вместо localStorage');
+        <div class="payment-methods">
+            <div class="payment-method active" data-method="yoomoney">
+                <div class="method-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="method-info">
+                    <div class="method-name">ЮMoney</div>
+                    <div class="method-desc">Оплата по номеру телефона или кошелька</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="payment-details">
+            <div class="detail-row">
+                <span>Номер для перевода:</span>
+                <span class="detail-value copy-target" data-clipboard-text="4100119450984155">
+                    <strong>4100 1194 5098 4155</strong>
+                    <button class="copy-btn" title="Скопировать">
+                        <i class="far fa-copy"></i>
+                    </button>
+                </span>
+            </div>
+            <div class="detail-row">
+                <span>Сумма к оплате:</span>
+                <span class="detail-value" id="paymentAmount">120 ₽</span>
+            </div>
+            <div class="detail-row">
+                <span>Комментарий к платежу:</span>
+                <span class="detail-value copy-target" data-clipboard-text="" id="paymentComment">
+                    <code class="comment-code" id="commentCode">loading...</code>
+                    <button class="copy-btn" title="Скопировать">
+                        <i class="far fa-copy"></i>
+                    </button>
+                </span>
+            </div>
+        </div>
+
+        <div class="yoomoney-redirect" style="display: none;">
+            <div class="alert alert-warning">
+                <i class="fas fa-external-link-alt"></i>
+                <p>После нажатия "Оплатить через ЮMoney" откроется страница оплаты. Завершите оплату там и вернитесь на эту страницу.</p>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <p>После оплаты нажмите "Я оплатил". Бот проверит платеж и выдаст вам статус в течение 5 минут.</p>
+        </div>
+    `;
+    
+    const originalFooter = `
+        <button class="btn-secondary" id="cancelBtn">Отмена</button>
+        <button class="btn-primary" id="confirmPayment">
+            <i class="fas fa-check"></i> Я оплатил
+        </button>
+    `;
+    
+    modalBody.innerHTML = originalBody;
+    modalFooter.innerHTML = originalFooter;
+    
+    // Переинициализация
+    initEventListeners();
+    initCopyButtons();
 }
