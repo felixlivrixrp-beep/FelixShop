@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FelixShop - Премиум подписки для Telegram</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23006eff'/%3E%3Ctext x='50' y='65' font-family='Arial' font-size='40' font-weight='bold' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <div class="logo">
+                    <div class="logo-icon">F</div>
+                    <span class="logo-text">FelixShop</span>
+                </div>
+                <div class="nav-links">
+                    <a href="#home" class="nav-link active">Главная</a>
+                    <a href="#products" class="nav-link">Тарифы</a>
+                    <a href="#howto" class="nav-link">Как купить</a>
+                </div>
+                <div class="header-actions">
+                    <a href="https://t.me/FelixShopSupport" target="_blank" class="support-btn">
+                        <i class="fab fa-telegram"></i> Поддержка
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Герой-секция -->
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="gradient-text">Премиум доступ</span>
+                    для вашего Telegram
+                </h1>
+                <p class="hero-subtitle">
+                    Получите статус VIP, Премиум или Christmas в нашей группе!<br>
+                    Особый тэг, уважение и эксклюзивные возможности.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">уровня статуса</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">автовыдача</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">дней Christmas</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="telegram-chat">
+                            <div class="chat-header">
+                                <div class="chat-title">Felix Group</div>
+                                <div class="online-dot"></div>
+                            </div>
+                            <div class="chat-messages">
+                                <div class="message admin">
+                                    <div class="message-sender vip">⭐ VIP User</div>
+                                    <div class="message-text">Привет всем! Я новый VIP участник!</div>
+                                </div>
+                                <div class="message user">
+                                    <div class="message-sender">Обычный user</div>
+                                    <div class="message-text">Круто! Как получить такой статус?</div>
+                                </div>
+                                <div class="message bot">
+                                    <div class="message-sender">🤖 FelixBot</div>
+                                    <div class="message-text">Нажми /buy для покупки статуса</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="wave-divider">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Тарифы -->
+    <section class="products" id="products">
+        <div class="container">
+            <h2 class="section-title">Выберите ваш статус</h2>
+            <p class="section-subtitle">Особый тэг в Telegram группе и уважение участников</p>
+            
+            <div class="pricing-cards">
+                <!-- Премиум -->
+                <div class="pricing-card">
+                    <div class="card-header">
+                        <div class="card-badge premium">PREMIUM</div>
+                        <h3 class="card-title">Премиум</h3>
+                        <div class="card-price">
+                            <span class="price">120</span>
+                            <span class="currency">₽</span>
+                        </div>
+                    </div>
+                    <div class="card-features">
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Тэг "⭐ Premium" в группе</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Статус администратора (без прав)</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Особое упоминание при входе</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Доступ навсегда</span>
+                        </div>
+                    </div>
+                    <button class="buy-btn" data-plan="premium" data-price="120">
+                        Купить сейчас
+                    </button>
+                </div>
+
+                <!-- VIP -->
+                <div class="pricing-card featured">
+                    <div class="card-header">
+                        <div class="card-badge vip">VIP</div>
+                        <h3 class="card-title">VIP</h3>
+                        <div class="card-price">
+                            <span class="price">240</span>
+                            <span class="currency">₽</span>
+                        </div>
+                        <div class="popular-badge">Популярный</div>
+                    </div>
+                    <div class="card-features">
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Тэг "👑 VIP" в группе</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Статус администратора (без прав)</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Особое упоминание при входе</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Приоритет в ответах от поддержки</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Доступ навсегда</span>
+                        </div>
+                    </div>
+                    <button class="buy-btn vip-btn" data-plan="vip" data-price="240">
+                        Купить сейчас
+                    </button>
+                </div>
+
+                <!-- Christmas -->
+                <div class="pricing-card">
+                    <div class="card-header">
+                        <div class="card-badge christmas">CHRISTMAS</div>
+                        <h3 class="card-title">Christmas</h3>
+                        <div class="card-price">
+                            <span class="price">450</span>
+                            <span class="currency">₽</span>
+                        </div>
+                        <div class="time-badge">Осталось 12 дней!</div>
+                    </div>
+                    <div class="card-features">
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Тэг "🎄 Christmas" в группе</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Статус администратора (без прав)</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Особое упоминание при входе</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Эксклюзивный рождественский стиль</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Личный рождественский стикерпак</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Действует до 31 декабря 2024</span>
+                        </div>
+                    </div>
+                    <button class="buy-btn" data-plan="christmas" data-price="450">
+                        Купить сейчас
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Как это работает -->
+    <section class="howto" id="howto">
+        <div class="container">
+            <h2 class="section-title">Как получить статус</h2>
+            <p class="section-subtitle">Всего 3 простых шага</p>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h3 class="step-title">Выберите тариф</h3>
+                    <p class="step-desc">Нажмите "Купить" на нужном тарифе</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h3 class="step-title">Оплатите</h3>
+                    <p class="step-desc">Переведите сумму на ЮMoney</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                    <h3 class="step-title">Получите статус</h3>
+                    <p class="step-desc">Бот автоматически выдаст вам тэг в Telegram</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Модальное окно покупки -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal">
+            <button class="modal-close" id="closeModal">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-header">
+                <h3 class="modal-title">Оформление покупки</h3>
+                <div class="selected-plan">
+                    <span class="plan-name" id="selectedPlanName">Premium</span>
+                    <span class="plan-price" id="selectedPlanPrice">120 ₽</span>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="telegramUsername">
+                        <i class="fab fa-telegram"></i> Ваш Telegram @username
+                    </label>
+                    <div class="input-with-prefix">
+                        <span class="input-prefix">@</span>
+                        <input type="text" id="telegramUsername" placeholder="username" maxlength="32">
+                    </div>
+                    <p class="input-hint">Без @, только английские буквы, цифры и нижние подчеркивания</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="userEmail">
+                        <i class="fas fa-envelope"></i> Email для чека (необязательно)
+                    </label>
+                    <input type="email" id="userEmail" placeholder="example@gmail.com">
+                </div>
+
+                <div class="payment-methods">
+                    <div class="payment-method active" data-method="yoomoney">
+                        <div class="method-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="method-info">
+                            <div class="method-name">ЮMoney</div>
+                            <div class="method-desc">Оплата по номеру телефона или кошелька</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-details">
+                    <div class="detail-row">
+                        <span>Номер для перевода:</span>
+                        <span class="detail-value copy-target" data-clipboard-text="4100119450984155">
+                            <strong>4100 1194 5098 4155</strong>
+                            <button class="copy-btn" title="Скопировать">
+                                <i class="far fa-copy"></i>
+                            </button>
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Сумма к оплате:</span>
+                        <span class="detail-value" id="paymentAmount">120 ₽</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Комментарий к платежу:</span>
+                        <span class="detail-value copy-target" data-clipboard-text="" id="paymentComment">
+                            <code class="comment-code" id="commentCode">loading...</code>
+                            <button class="copy-btn" title="Скопировать">
+                                <i class="far fa-copy"></i>
+                            </button>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    <p>После оплаты нажмите "Я оплатил". Бот проверит платеж в течение 5 минут и выдаст вам статус.</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelBtn">Отмена</button>
+                <button class="btn-primary" id="confirmPayment">
+                    <i class="fas fa-check"></i> Я оплатил
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно успеха -->
+    <div class="modal-overlay success-modal" id="successModal">
+        <div class="modal">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="modal-title">Запрос принят!</h3>
+            <p class="modal-text" id="successMessage">
+                Мы получили ваш запрос на выдачу статуса <strong>Premium</strong>. 
+                Проверяем оплату...
+            </p>
+            <div class="status-check">
+                <div class="status-loader"></div>
+                <p class="status-text">Проверяем платеж...</p>
+            </div>
+            <div class="telegram-info">
+                <i class="fab fa-telegram"></i>
+                <p>Как только платеж подтвердится, бот @FelixShop0Bot выдаст вам статус в группе</p>
+            </div>
+            <button class="btn-primary" id="closeSuccessModal">
+                Закрыть
+            </button>
+        </div>
+    </div>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <div class="logo-icon">F</div>
+                    <span class="logo-text">FelixShop</span>
+                </div>
+                <div class="footer-links">
+                    <a href="https://t.me/FelixShopSupport" target="_blank" class="footer-link">
+                        <i class="fab fa-telegram"></i> Поддержка
+                    </a>
+                    <a href="https://t.me/FelixShopNews" target="_blank" class="footer-link">
+                        <i class="fas fa-newspaper"></i> Новости
+                    </a>
+                    <a href="#" class="footer-link">
+                        <i class="fas fa-shield-alt"></i> Политика конфиденциальности
+                    </a>
+                </div>
+                <div class="footer-info">
+                    <p class="copyright">© 2024 FelixShop. Все права защищены.</p>
+                    <p class="disclaimer">Неофициальный магазин. Не связан с Telegram LLC.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
